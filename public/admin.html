@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bar Signage Admin</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="admin">
+  <div class="wrap">
+    <h1>Bar Signage Admin</h1>
+
+    <section class="panel">
+      <h2>Upload Image</h2>
+      <input type="file" id="file" />
+      <button id="uploadBtn">Upload</button>
+      <div id="uploadResult" class="muted"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Add Category (Main Menu or Drinks)</h2>
+      <select id="catChannel">
+        <option value="main-menu">Main Menu</option>
+        <option value="drinks">Drinks</option>
+      </select>
+      <input id="catName" placeholder="Category name" />
+      <button id="addCatBtn">Add Category</button>
+    </section>
+
+    <section class="panel">
+      <h2>Add Item</h2>
+      <select id="itemCategory"></select>
+      <input id="itemName" placeholder="Item name" />
+      <input id="itemPrice" placeholder="Price like 8.00" />
+      <input id="itemDesc" placeholder="Description (optional)" />
+      <input id="itemImg" placeholder="Image URL (optional, paste from upload)" />
+      <button id="addItemBtn">Add Item</button>
+    </section>
+
+    <section class="panel">
+      <h2>Add Event Slide</h2>
+      <input id="slideTitle" placeholder="Title" />
+      <input id="slideSub" placeholder="Subtitle (optional)" />
+      <input id="slideImg" placeholder="Image URL (optional)" />
+      <button id="addSlideBtn">Add Slide</button>
+    </section>
+
+    <section class="panel">
+      <h2>Quick Links</h2>
+      <div class="links">
+        <a target="_blank" href="/screen/1">Screen 1</a>
+        <a target="_blank" href="/screen/2">Screen 2</a>
+        <a target="_blank" href="/screen/3">Screen 3</a>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>State</h2>
+      <pre id="state"></pre>
+    </section>
+  </div>
+
+  <script src="/admin.js"></script>
+</body>
+</html>
