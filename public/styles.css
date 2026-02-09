@@ -1,0 +1,36 @@
+:root { --bg:#0b0b0f; --panel:#141422; --text:#f3f4ff; --muted:#a7abcc; --border:rgba(255,255,255,.10); --radius:18px; }
+* { box-sizing:border-box; }
+body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; background:var(--bg); color:var(--text); }
+
+.screen #root { height:100vh; padding:24px; }
+.header .title { font-size:46px; font-weight:800; letter-spacing:2px; margin-bottom:18px; }
+
+.grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:18px; }
+.panel { background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:18px; }
+.panelTitle { font-size:28px; font-weight:800; margin-bottom:12px; }
+
+.row { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,.06); }
+.row:last-child { border-bottom:0; }
+.name { font-size:22px; font-weight:700; }
+.price { font-size:22px; font-weight:800; }
+.desc { font-size:16px; color:var(--muted); margin:-2px 0 6px 0; }
+
+.slide { height:100%; display:flex; gap:22px; align-items:center; }
+.slideImg { max-height:88vh; max-width:55vw; border-radius:18px; border:1px solid var(--border); object-fit:cover; }
+.slideText { max-width:40vw; }
+.slideTitle { font-size:64px; font-weight:900; line-height:1.0; }
+.slideSub { margin-top:14px; font-size:30px; color:var(--muted); }
+
+.centerBig { height:100%; display:flex; align-items:center; justify-content:center; font-size:56px; font-weight:900; }
+
+.admin .wrap { max-width:980px; margin:0 auto; padding:22px; }
+.admin h1 { margin:6px 0 18px 0; }
+.admin h2 { margin:0 0 10px 0; }
+.admin input, .admin select, .admin button {
+  padding:10px 12px; border-radius:12px; border:1px solid var(--border);
+  background:#0f0f1a; color:var(--text); margin:6px 6px 0 0;
+}
+.admin button { cursor:pointer; background:#1b2a7a; }
+.muted { color:var(--muted); margin-top:8px; }
+.links a { display:inline-block; margin-right:10px; color:#cfd6ff; }
+pre { overflow:auto; max-height:280px; background:#0f0f1a; padding:12px; border-radius:12px; border:1px solid var(--border); }
