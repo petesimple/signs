@@ -37,6 +37,7 @@ function showAdminAfterLogin() {
   });
 
   addLogoutButton();
+  ensureYouTubeSlideInputs();
 }
 
 function showLoginScreen() {
@@ -155,6 +156,34 @@ function addLogoutButton() {
   }
 }
 
+function ensureYouTubeSlideInputs() {
+  const slideTitle = document.getElementById("slideTitle");
+  const slideImg = document.getElementById("slideImg");
+
+  if (!slideTitle || !slideImg) return;
+  if (document.getElementById("slideMediaType")) return;
+
+  const mediaType = document.createElement("select");
+  mediaType.id = "slideMediaType";
+  mediaType.style.marginTop = "8px";
+  mediaType.style.width = "100%";
+  mediaType.style.maxWidth = "520px";
+  mediaType.innerHTML = `
+    <option value="image">Image Slide</option>
+    <option value="youtube">YouTube Video</option>
+  `;
+
+  const youtubeInput = document.createElement("input");
+  youtubeInput.id = "slideYouTube";
+  youtubeInput.placeholder = "YouTube URL";
+  youtubeInput.style.marginTop = "8px";
+  youtubeInput.style.width = "100%";
+  youtubeInput.style.maxWidth = "520px";
+
+  slideImg.insertAdjacentElement("beforebegin", mediaType);
+  slideImg.insertAdjacentElement("afterend", youtubeInput);
+}
+
 function ensureManagerPanel() {
   let panel = document.getElementById("managerPanel");
 
@@ -204,6 +233,8 @@ async function apiJson(url, options = {}) {
 async function refresh() {
   if (!isLoggedIn()) return;
 
+  ensureYouTubeSlideInputs();
+
   const r = await fetch("/api/admin/state");
   const data = await r.json();
 
@@ -251,69 +282,100 @@ function renderSlideManager(slides) {
     <div id="slideOrderStatus" style="min-height:22px; margin:0 0 8px; color:#b9bad6; font-weight:700;"></div>
 
     <div id="slideDropList">
-      ${sortedSlides.map((slide, index) => `
-        <div
-          class="manageCard slideDragCard"
-          draggable="true"
-          data-slide-id="${slide.id}"
-          style="
-            border:1px solid #2b2d44;
-            border-radius:14px;
-            padding:14px;
-            margin:12px 0;
-            cursor:grab;
-            background:#151524;
-          "
-        >
-          <div style="display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap;">
-            <div
-              title="Drag to reorder"
-              style="
-                width:36px;
-                min-height:100px;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                border-radius:10px;
-                border:1px solid #33364f;
-                color:#b9bad6;
-                font-size:22px;
-                user-select:none;
-              "
-            >
-              ☰
-            </div>
+      ${sortedSlides.map((slide, index) => {
+        const mediaType = slide.media_type || "image";
+        const youtubeUrl = slide.youtube_url || "";
 
-            ${slide.image_url ? `
-              <img src="${esc(slide.image_url)}" alt="" style="width:160px; max-height:100px; object-fit:cover; border-radius:10px; border:1px solid #333;">
-            ` : `
-              <div style="width:160px; height:100px; display:flex; align-items:center; justify-content:center; border-radius:10px; border:1px solid #333; color:#999;">
-                No image
-              </div>
-            `}
-
-            <div style="flex:1; min-width:260px;">
-              <div>
-                <strong>Slide ${index + 1}</strong>
-                <span style="color:#8d90b5;">ID ${slide.id}</span>
-                ${slide.is_active ? "" : "<span style='color:#ffcf66;'>(hidden)</span>"}
+        return `
+          <div
+            class="manageCard slideDragCard"
+            draggable="true"
+            data-slide-id="${slide.id}"
+            style="
+              border:1px solid #2b2d44;
+              border-radius:14px;
+              padding:14px;
+              margin:12px 0;
+              cursor:grab;
+              background:#151524;
+            "
+          >
+            <div style="display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap;">
+              <div
+                title="Drag to reorder"
+                style="
+                  width:36px;
+                  min-height:100px;
+                  display:flex;
+                  align-items:center;
+                  justify-content:center;
+                  border-radius:10px;
+                  border:1px solid #33364f;
+                  color:#b9bad6;
+                  font-size:22px;
+                  user-select:none;
+                "
+              >
+                ☰
               </div>
 
-              <input id="slideTitle_${slide.id}" value="${esc(slide.title)}" placeholder="Title" style="margin-top:8px; width:100%; max-width:520px;">
-              <input id="slideSub_${slide.id}" value="${esc(slide.subtitle)}" placeholder="Subtitle" style="margin-top:8px; width:100%; max-width:520px;">
-              <input id="slideImg_${slide.id}" value="${esc(slide.image_url)}" placeholder="Image URL" style="margin-top:8px; width:100%; max-width:520px;">
+              ${mediaType === "youtube" ? `
+                <div style="
+                  width:160px;
+                  height:100px;
+                  display:flex;
+                  align-items:center;
+                  justify-content:center;
+                  text-align:center;
+                  border-radius:10px;
+                  border:1px solid #333;
+                  color:#fff;
+                  background:#351414;
+                  padding:10px;
+                  box-sizing:border-box;
+                  font-weight:800;
+                ">
+                  YouTube Video
+                </div>
+              ` : slide.image_url ? `
+                <img src="${esc(slide.image_url)}" alt="" style="width:160px; max-height:100px; object-fit:cover; border-radius:10px; border:1px solid #333;">
+              ` : `
+                <div style="width:160px; height:100px; display:flex; align-items:center; justify-content:center; border-radius:10px; border:1px solid #333; color:#999;">
+                  No image
+                </div>
+              `}
 
-              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
-                <button onclick="moveSlide(${slide.id}, -1)">Move Up</button>
-                <button onclick="moveSlide(${slide.id}, 1)">Move Down</button>
-                <button onclick="saveSlide(${slide.id})">Save</button>
-                <button onclick="toggleSlide(${slide.id})">${slide.is_active ? "Hide" : "Show"}</button>
-                <button onclick="deleteSlide(${slide.id})">Delete</button>
+              <div style="flex:1; min-width:260px;">
+                <div>
+                  <strong>Slide ${index + 1}</strong>
+                  <span style="color:#8d90b5;">ID ${slide.id}</span>
+                  ${slide.is_active ? "" : "<span style='color:#ffcf66;'>(hidden)</span>"}
+                  <span style="color:#8d90b5;">Type: ${esc(mediaType)}</span>
+                </div>
+
+                <input id="slideTitle_${slide.id}" value="${esc(slide.title)}" placeholder="Title" style="margin-top:8px; width:100%; max-width:520px;">
+                <input id="slideSub_${slide.id}" value="${esc(slide.subtitle)}" placeholder="Subtitle" style="margin-top:8px; width:100%; max-width:520px;">
+
+                <select id="slideMediaType_${slide.id}" style="margin-top:8px; width:100%; max-width:520px;">
+                  <option value="image" ${mediaType === "image" ? "selected" : ""}>Image Slide</option>
+                  <option value="youtube" ${mediaType === "youtube" ? "selected" : ""}>YouTube Video</option>
+                </select>
+
+                <input id="slideImg_${slide.id}" value="${esc(slide.image_url)}" placeholder="Image URL" style="margin-top:8px; width:100%; max-width:520px;">
+                <input id="slideYouTube_${slide.id}" value="${esc(youtubeUrl)}" placeholder="YouTube URL" style="margin-top:8px; width:100%; max-width:520px;">
+
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+                  <button onclick="moveSlide(${slide.id}, -1)">Move Up</button>
+                  <button onclick="moveSlide(${slide.id}, 1)">Move Down</button>
+                  <button onclick="saveSlide(${slide.id})">Save</button>
+                  <button onclick="toggleSlide(${slide.id})">${slide.is_active ? "Hide" : "Show"}</button>
+                  <button onclick="deleteSlide(${slide.id})">Delete</button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      `).join("")}
+        `;
+      }).join("")}
     </div>
   `;
 
@@ -419,6 +481,8 @@ async function saveSlideOrderFromDom() {
         title: document.getElementById(`slideTitle_${id}`)?.value ?? oldSlide?.title ?? "",
         subtitle: document.getElementById(`slideSub_${id}`)?.value ?? oldSlide?.subtitle ?? "",
         image_url: document.getElementById(`slideImg_${id}`)?.value ?? oldSlide?.image_url ?? "",
+        media_type: document.getElementById(`slideMediaType_${id}`)?.value ?? oldSlide?.media_type ?? "image",
+        youtube_url: document.getElementById(`slideYouTube_${id}`)?.value ?? oldSlide?.youtube_url ?? "",
         is_active: oldSlide?.is_active ?? 1,
         sort_order: index + 1
       }
@@ -531,6 +595,9 @@ document.getElementById("uploadBtn").onclick = async () => {
 
   uploadResult.textContent = `Uploaded: ${data.image_url}`;
 
+  const slideMediaType = document.getElementById("slideMediaType");
+  if (slideMediaType) slideMediaType.value = "image";
+
   const slideImg = document.getElementById("slideImg");
   if (slideImg) slideImg.value = data.image_url;
 
@@ -592,7 +659,9 @@ document.getElementById("addSlideBtn").onclick = async () => {
   const payload = {
     title: document.getElementById("slideTitle").value,
     subtitle: document.getElementById("slideSub").value,
-    image_url: document.getElementById("slideImg").value
+    image_url: document.getElementById("slideImg").value,
+    media_type: document.getElementById("slideMediaType")?.value || "image",
+    youtube_url: document.getElementById("slideYouTube")?.value || ""
   };
 
   try {
@@ -605,6 +674,13 @@ document.getElementById("addSlideBtn").onclick = async () => {
     document.getElementById("slideTitle").value = "";
     document.getElementById("slideSub").value = "";
     document.getElementById("slideImg").value = "";
+
+    const slideMediaType = document.getElementById("slideMediaType");
+    if (slideMediaType) slideMediaType.value = "image";
+
+    const slideYouTube = document.getElementById("slideYouTube");
+    if (slideYouTube) slideYouTube.value = "";
+
     refresh();
   } catch (err) {
     alert(err.message);
@@ -620,6 +696,8 @@ window.saveSlide = async function saveSlide(id) {
     title: document.getElementById(`slideTitle_${id}`).value,
     subtitle: document.getElementById(`slideSub_${id}`).value,
     image_url: document.getElementById(`slideImg_${id}`).value,
+    media_type: document.getElementById(`slideMediaType_${id}`)?.value || oldSlide?.media_type || "image",
+    youtube_url: document.getElementById(`slideYouTube_${id}`)?.value || oldSlide?.youtube_url || "",
     is_active: oldSlide?.is_active ?? 1,
     sort_order: oldSlide?.sort_order ?? Date.now()
   };
