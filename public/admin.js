@@ -1,8 +1,158 @@
+const ADMIN_PASSWORD = "pray4kevin";
+const ADMIN_SESSION_KEY = "barSignageAdminLoggedIn";
+
 const stateEl = document.getElementById("state");
 const itemCategory = document.getElementById("itemCategory");
 const uploadResult = document.getElementById("uploadResult");
 
 let currentState = null;
+
+function isLoggedIn() {
+  return sessionStorage.getItem(ADMIN_SESSION_KEY) === "yes";
+}
+
+function setLoggedIn() {
+  sessionStorage.setItem(ADMIN_SESSION_KEY, "yes");
+}
+
+function logout() {
+  sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  location.reload();
+}
+
+function hideAdminUntilLogin() {
+  const children = Array.from(document.body.children);
+
+  children.forEach((child) => {
+    child.style.display = "none";
+  });
+}
+
+function showAdminAfterLogin() {
+  const children = Array.from(document.body.children);
+
+  children.forEach((child) => {
+    child.style.display = "";
+  });
+
+  addLogoutButton();
+}
+
+function showLoginScreen() {
+  hideAdminUntilLogin();
+
+  const login = document.createElement("div");
+  login.id = "loginScreen";
+  login.innerHTML = `
+    <div style="
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#090a10;
+      color:#f5f5ff;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      padding:24px;
+    ">
+      <div style="
+        width:min(420px, 100%);
+        background:#151524;
+        border:1px solid #2b2d44;
+        border-radius:22px;
+        padding:28px;
+        box-shadow:0 20px 60px rgba(0,0,0,.35);
+      ">
+        <h1 style="margin:0 0 8px; font-size:32px;">Bar Signage Admin</h1>
+        <p style="margin:0 0 22px; color:#b9bad6;">Kevin’s test bar deserves a tiny velvet rope.</p>
+
+        <label for="adminPassword" style="display:block; margin-bottom:8px; font-weight:700;">Password</label>
+        <input
+          id="adminPassword"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Enter password"
+          style="
+            width:100%;
+            box-sizing:border-box;
+            padding:14px 16px;
+            border-radius:14px;
+            border:1px solid #33364f;
+            background:#0d0d17;
+            color:#fff;
+            font-size:16px;
+            margin-bottom:14px;
+          "
+        />
+
+        <button
+          id="adminLoginBtn"
+          style="
+            width:100%;
+            padding:14px 18px;
+            border:0;
+            border-radius:14px;
+            background:#263c9c;
+            color:#fff;
+            font-weight:800;
+            font-size:16px;
+            cursor:pointer;
+          "
+        >
+          Log In
+        </button>
+
+        <div id="loginMsg" style="min-height:24px; margin-top:14px; color:#ff9a9a; font-weight:700;"></div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(login);
+
+  const passwordInput = document.getElementById("adminPassword");
+  const loginBtn = document.getElementById("adminLoginBtn");
+  const msg = document.getElementById("loginMsg");
+
+  function attemptLogin() {
+    const entered = passwordInput.value;
+
+    if (entered === ADMIN_PASSWORD) {
+      setLoggedIn();
+      login.remove();
+      showAdminAfterLogin();
+      refresh();
+      return;
+    }
+
+    msg.textContent = "Nope. The puck did not cross the line.";
+    passwordInput.value = "";
+    passwordInput.focus();
+  }
+
+  loginBtn.onclick = attemptLogin;
+
+  passwordInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") attemptLogin();
+  });
+
+  setTimeout(() => passwordInput.focus(), 50);
+}
+
+function addLogoutButton() {
+  if (document.getElementById("logoutBtn")) return;
+
+  const btn = document.createElement("button");
+  btn.id = "logoutBtn";
+  btn.textContent = "Log Out";
+  btn.style.margin = "0 0 16px";
+  btn.onclick = logout;
+
+  const h1 = document.querySelector("h1");
+  if (h1) {
+    h1.insertAdjacentElement("afterend", btn);
+  } else {
+    document.body.prepend(btn);
+  }
+}
 
 function ensureManagerPanel() {
   let panel = document.getElementById("managerPanel");
@@ -51,6 +201,8 @@ async function apiJson(url, options = {}) {
 }
 
 async function refresh() {
+  if (!isLoggedIn()) return;
+
   const r = await fetch("/api/admin/state");
   const data = await r.json();
   currentState = data;
@@ -167,6 +319,8 @@ function renderItemManager(items, categories) {
 }
 
 document.getElementById("uploadBtn").onclick = async () => {
+  if (!isLoggedIn()) return;
+
   const file = document.getElementById("file").files[0];
 
   if (!file) {
@@ -199,6 +353,8 @@ document.getElementById("uploadBtn").onclick = async () => {
 };
 
 document.getElementById("addCatBtn").onclick = async () => {
+  if (!isLoggedIn()) return;
+
   const channel = document.getElementById("catChannel").value;
   const name = document.getElementById("catName").value;
 
@@ -217,6 +373,8 @@ document.getElementById("addCatBtn").onclick = async () => {
 };
 
 document.getElementById("addItemBtn").onclick = async () => {
+  if (!isLoggedIn()) return;
+
   const payload = {
     category_id: Number(itemCategory.value),
     name: document.getElementById("itemName").value,
@@ -243,6 +401,8 @@ document.getElementById("addItemBtn").onclick = async () => {
 };
 
 document.getElementById("addSlideBtn").onclick = async () => {
+  if (!isLoggedIn()) return;
+
   const payload = {
     title: document.getElementById("slideTitle").value,
     subtitle: document.getElementById("slideSub").value,
@@ -266,6 +426,8 @@ document.getElementById("addSlideBtn").onclick = async () => {
 };
 
 window.saveSlide = async function saveSlide(id) {
+  if (!isLoggedIn()) return;
+
   const oldSlide = currentState.slides.find(s => Number(s.id) === Number(id));
 
   const payload = {
@@ -290,6 +452,8 @@ window.saveSlide = async function saveSlide(id) {
 };
 
 window.toggleSlide = async function toggleSlide(id) {
+  if (!isLoggedIn()) return;
+
   try {
     await apiJson(`/api/admin/slide/${id}/toggle`, {
       method: "POST"
@@ -302,6 +466,7 @@ window.toggleSlide = async function toggleSlide(id) {
 };
 
 window.deleteSlide = async function deleteSlide(id) {
+  if (!isLoggedIn()) return;
   if (!confirm(`Delete slide ${id}?`)) return;
 
   try {
@@ -316,6 +481,8 @@ window.deleteSlide = async function deleteSlide(id) {
 };
 
 window.saveCategory = async function saveCategory(id) {
+  if (!isLoggedIn()) return;
+
   const oldCat = currentState.categories.find(c => Number(c.id) === Number(id));
 
   const payload = {
@@ -338,6 +505,7 @@ window.saveCategory = async function saveCategory(id) {
 };
 
 window.deleteCategory = async function deleteCategory(id) {
+  if (!isLoggedIn()) return;
   if (!confirm(`Delete category ${id} and all items inside it?`)) return;
 
   try {
@@ -352,6 +520,8 @@ window.deleteCategory = async function deleteCategory(id) {
 };
 
 window.saveItem = async function saveItem(id) {
+  if (!isLoggedIn()) return;
+
   const oldItem = currentState.items.find(i => Number(i.id) === Number(id));
 
   const payload = {
@@ -378,6 +548,8 @@ window.saveItem = async function saveItem(id) {
 };
 
 window.toggleItem = async function toggleItem(id) {
+  if (!isLoggedIn()) return;
+
   try {
     await apiJson(`/api/admin/item/${id}/toggle`, {
       method: "POST"
@@ -390,6 +562,7 @@ window.toggleItem = async function toggleItem(id) {
 };
 
 window.deleteItem = async function deleteItem(id) {
+  if (!isLoggedIn()) return;
   if (!confirm(`Delete item ${id}?`)) return;
 
   try {
@@ -403,4 +576,9 @@ window.deleteItem = async function deleteItem(id) {
   }
 };
 
-refresh();
+if (isLoggedIn()) {
+  showAdminAfterLogin();
+  refresh();
+} else {
+  showLoginScreen();
+}
