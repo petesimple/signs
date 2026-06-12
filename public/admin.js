@@ -6,6 +6,7 @@ const itemCategory = document.getElementById("itemCategory");
 const uploadResult = document.getElementById("uploadResult");
 
 let currentState = null;
+let draggedSlideId = null;
 
 function isLoggedIn() {
   return sessionStorage.getItem(ADMIN_SESSION_KEY) === "yes";
@@ -205,18 +206,31 @@ async function refresh() {
 
   const r = await fetch("/api/admin/state");
   const data = await r.json();
-  currentState = data;
 
-  stateEl.textContent = JSON.stringify(data, null, 2);
+  currentState = {
+    slides: Array.isArray(data.slides) ? data.slides : [],
+    categories: Array.isArray(data.categories) ? data.categories : [],
+    items: Array.isArray(data.items) ? data.items : []
+  };
 
-  itemCategory.innerHTML = data.categories.map(c =>
+  stateEl.textContent = JSON.stringify(currentState, null, 2);
+
+  itemCategory.innerHTML = currentState.categories.map(c =>
     `<option value="${c.id}">${esc(c.channel)} - ${esc(c.name)}</option>`
   ).join("");
 
   ensureManagerPanel();
-  renderSlideManager(data.slides);
-  renderCategoryManager(data.categories);
-  renderItemManager(data.items, data.categories);
+  renderSlideManager(currentState.slides);
+  renderCategoryManager(currentState.categories);
+  renderItemManager(currentState.items, currentState.categories);
+}
+
+function getSortedSlides(slides) {
+  return [...slides].sort((a, b) => {
+    const aOrder = Number(a.sort_order ?? a.id);
+    const bOrder = Number(b.sort_order ?? b.id);
+    return aOrder - bOrder;
+  });
 }
 
 function renderSlideManager(slides) {
@@ -227,33 +241,205 @@ function renderSlideManager(slides) {
     return;
   }
 
-  el.innerHTML = slides.map(slide => `
-    <div class="manageCard" style="border:1px solid #2b2d44; border-radius:14px; padding:14px; margin:12px 0;">
-      <div style="display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap;">
-        ${slide.image_url ? `
-          <img src="${esc(slide.image_url)}" alt="" style="width:160px; max-height:100px; object-fit:cover; border-radius:10px; border:1px solid #333;">
-        ` : `
-          <div style="width:160px; height:100px; display:flex; align-items:center; justify-content:center; border-radius:10px; border:1px solid #333; color:#999;">
-            No image
-          </div>
-        `}
+  const sortedSlides = getSortedSlides(slides);
 
-        <div style="flex:1; min-width:260px;">
-          <div><strong>Slide ${slide.id}</strong> ${slide.is_active ? "" : "<span style='color:#ffcf66;'>(hidden)</span>"}</div>
+  el.innerHTML = `
+    <p class="muted" style="margin:6px 0 12px;">
+      Drag slides up or down to change the Event Slides order. Use the arrows on mobile if dragging acts like a greased puck.
+    </p>
 
-          <input id="slideTitle_${slide.id}" value="${esc(slide.title)}" placeholder="Title" style="margin-top:8px; width:100%; max-width:520px;">
-          <input id="slideSub_${slide.id}" value="${esc(slide.subtitle)}" placeholder="Subtitle" style="margin-top:8px; width:100%; max-width:520px;">
-          <input id="slideImg_${slide.id}" value="${esc(slide.image_url)}" placeholder="Image URL" style="margin-top:8px; width:100%; max-width:520px;">
+    <div id="slideOrderStatus" style="min-height:22px; margin:0 0 8px; color:#b9bad6; font-weight:700;"></div>
 
-          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
-            <button onclick="saveSlide(${slide.id})">Save</button>
-            <button onclick="toggleSlide(${slide.id})">${slide.is_active ? "Hide" : "Show"}</button>
-            <button onclick="deleteSlide(${slide.id})">Delete</button>
+    <div id="slideDropList">
+      ${sortedSlides.map((slide, index) => `
+        <div
+          class="manageCard slideDragCard"
+          draggable="true"
+          data-slide-id="${slide.id}"
+          style="
+            border:1px solid #2b2d44;
+            border-radius:14px;
+            padding:14px;
+            margin:12px 0;
+            cursor:grab;
+            background:#151524;
+          "
+        >
+          <div style="display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap;">
+            <div
+              title="Drag to reorder"
+              style="
+                width:36px;
+                min-height:100px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                border-radius:10px;
+                border:1px solid #33364f;
+                color:#b9bad6;
+                font-size:22px;
+                user-select:none;
+              "
+            >
+              ☰
+            </div>
+
+            ${slide.image_url ? `
+              <img src="${esc(slide.image_url)}" alt="" style="width:160px; max-height:100px; object-fit:cover; border-radius:10px; border:1px solid #333;">
+            ` : `
+              <div style="width:160px; height:100px; display:flex; align-items:center; justify-content:center; border-radius:10px; border:1px solid #333; color:#999;">
+                No image
+              </div>
+            `}
+
+            <div style="flex:1; min-width:260px;">
+              <div>
+                <strong>Slide ${index + 1}</strong>
+                <span style="color:#8d90b5;">ID ${slide.id}</span>
+                ${slide.is_active ? "" : "<span style='color:#ffcf66;'>(hidden)</span>"}
+              </div>
+
+              <input id="slideTitle_${slide.id}" value="${esc(slide.title)}" placeholder="Title" style="margin-top:8px; width:100%; max-width:520px;">
+              <input id="slideSub_${slide.id}" value="${esc(slide.subtitle)}" placeholder="Subtitle" style="margin-top:8px; width:100%; max-width:520px;">
+              <input id="slideImg_${slide.id}" value="${esc(slide.image_url)}" placeholder="Image URL" style="margin-top:8px; width:100%; max-width:520px;">
+
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+                <button onclick="moveSlide(${slide.id}, -1)">Move Up</button>
+                <button onclick="moveSlide(${slide.id}, 1)">Move Down</button>
+                <button onclick="saveSlide(${slide.id})">Save</button>
+                <button onclick="toggleSlide(${slide.id})">${slide.is_active ? "Hide" : "Show"}</button>
+                <button onclick="deleteSlide(${slide.id})">Delete</button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      `).join("")}
     </div>
-  `).join("");
+  `;
+
+  setupSlideDragAndDrop();
+}
+
+function setSlideOrderStatus(message) {
+  const el = document.getElementById("slideOrderStatus");
+  if (el) el.textContent = message;
+}
+
+function setupSlideDragAndDrop() {
+  const list = document.getElementById("slideDropList");
+  if (!list) return;
+
+  const cards = Array.from(list.querySelectorAll(".slideDragCard"));
+
+  cards.forEach(card => {
+    card.addEventListener("dragstart", event => {
+      draggedSlideId = card.dataset.slideId;
+      card.style.opacity = "0.45";
+      card.style.cursor = "grabbing";
+
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", draggedSlideId);
+    });
+
+    card.addEventListener("dragend", () => {
+      draggedSlideId = null;
+      card.style.opacity = "";
+      card.style.cursor = "grab";
+
+      Array.from(list.querySelectorAll(".slideDragCard")).forEach(c => {
+        c.style.borderColor = "#2b2d44";
+      });
+    });
+
+    card.addEventListener("dragover", event => {
+      event.preventDefault();
+
+      const draggingCard = list.querySelector(`[data-slide-id="${draggedSlideId}"]`);
+      if (!draggingCard || draggingCard === card) return;
+
+      card.style.borderColor = "#7c8cff";
+
+      const rect = card.getBoundingClientRect();
+      const halfway = rect.top + rect.height / 2;
+
+      if (event.clientY < halfway) {
+        list.insertBefore(draggingCard, card);
+      } else {
+        list.insertBefore(draggingCard, card.nextSibling);
+      }
+    });
+
+    card.addEventListener("dragleave", () => {
+      card.style.borderColor = "#2b2d44";
+    });
+
+    card.addEventListener("drop", async event => {
+      event.preventDefault();
+      await saveSlideOrderFromDom();
+    });
+  });
+}
+
+window.moveSlide = async function moveSlide(id, direction) {
+  if (!isLoggedIn()) return;
+
+  const list = document.getElementById("slideDropList");
+  if (!list) return;
+
+  const card = list.querySelector(`[data-slide-id="${id}"]`);
+  if (!card) return;
+
+  if (direction < 0 && card.previousElementSibling) {
+    list.insertBefore(card, card.previousElementSibling);
+    await saveSlideOrderFromDom();
+  }
+
+  if (direction > 0 && card.nextElementSibling) {
+    list.insertBefore(card.nextElementSibling, card);
+    await saveSlideOrderFromDom();
+  }
+};
+
+async function saveSlideOrderFromDom() {
+  if (!isLoggedIn()) return;
+  if (!currentState?.slides?.length) return;
+
+  const cards = Array.from(document.querySelectorAll("#slideDropList .slideDragCard"));
+  if (!cards.length) return;
+
+  setSlideOrderStatus("Saving slide order...");
+
+  const updates = cards.map((card, index) => {
+    const id = Number(card.dataset.slideId);
+    const oldSlide = currentState.slides.find(s => Number(s.id) === id);
+
+    return {
+      id,
+      payload: {
+        title: document.getElementById(`slideTitle_${id}`)?.value ?? oldSlide?.title ?? "",
+        subtitle: document.getElementById(`slideSub_${id}`)?.value ?? oldSlide?.subtitle ?? "",
+        image_url: document.getElementById(`slideImg_${id}`)?.value ?? oldSlide?.image_url ?? "",
+        is_active: oldSlide?.is_active ?? 1,
+        sort_order: index + 1
+      }
+    };
+  });
+
+  try {
+    await Promise.all(updates.map(update =>
+      apiJson(`/api/admin/slide/${update.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(update.payload)
+      })
+    ));
+
+    setSlideOrderStatus("Slide order saved.");
+    await refresh();
+  } catch (err) {
+    setSlideOrderStatus("");
+    alert(err.message);
+  }
 }
 
 function renderCategoryManager(categories) {
@@ -305,7 +491,7 @@ function renderItemManager(items, categories) {
       </select>
 
       <input id="itemName_${item.id}" value="${esc(item.name)}" placeholder="Item name" style="margin-top:8px;">
-      <input id="itemPrice_${item.id}" value="${esc((item.price_cents / 100).toFixed(2))}" placeholder="Price" style="margin-top:8px;">
+      <input id="itemPrice_${item.id}" value="${esc((Number(item.price_cents || 0) / 100).toFixed(2))}" placeholder="Price" style="margin-top:8px;">
       <input id="itemDesc_${item.id}" value="${esc(item.description)}" placeholder="Description" style="margin-top:8px;">
       <input id="itemImg_${item.id}" value="${esc(item.image_url)}" placeholder="Image URL" style="margin-top:8px;">
 
