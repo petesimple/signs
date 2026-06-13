@@ -338,20 +338,26 @@ app.post("/api/admin/slide", (req, res) => {
   const {
     title,
     subtitle = "",
-    image_url = ""
+    image_url = "",
+    media_type = "image",
+    youtube_url = ""
   } = req.body;
 
   if (!title?.trim()) {
     return res.status(400).json({ error: "title required" });
   }
 
+  const cleanMediaType = media_type === "youtube" ? "youtube" : "image";
+
   const info = db.prepare(`
-    INSERT INTO slides(title, subtitle, image_url, sort_order)
-    VALUES(?, ?, ?, ?)
+    INSERT INTO slides(title, subtitle, image_url, media_type, youtube_url, sort_order)
+    VALUES(?, ?, ?, ?, ?, ?)
   `).run(
     title.trim(),
     subtitle,
     image_url,
+    cleanMediaType,
+    youtube_url,
     Date.now()
   );
 
@@ -370,6 +376,8 @@ app.put("/api/admin/slide/:id", (req, res) => {
     title,
     subtitle = "",
     image_url = "",
+    media_type = "image",
+    youtube_url = "",
     is_active = 1,
     sort_order
   } = req.body;
@@ -383,16 +391,19 @@ app.put("/api/admin/slide/:id", (req, res) => {
     return res.status(400).json({ error: "title required" });
   }
 
+  const cleanMediaType = media_type === "youtube" ? "youtube" : "image";
   const nextSortOrder = Number(sort_order || existing.sort_order);
 
   db.prepare(`
     UPDATE slides
-    SET title=?, subtitle=?, image_url=?, is_active=?, sort_order=?
+    SET title=?, subtitle=?, image_url=?, media_type=?, youtube_url=?, is_active=?, sort_order=?
     WHERE id=?
   `).run(
     title.trim(),
     subtitle,
     image_url,
+    cleanMediaType,
+    youtube_url,
     Number(is_active) ? 1 : 0,
     nextSortOrder,
     id

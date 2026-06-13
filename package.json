@@ -1,0 +1,27 @@
+{
+  "name": "signs",
+  "version": "1.0.0",
+  "description": "### Prereqs You need Node.js (includes `node` + `npm`).",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/petesimple/signs.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/petesimple/signs/issues"
+  },
+  "homepage": "https://github.com/petesimple/signs#readme",
+  "dependencies": {
+    "better-sqlite3": "^12.10.0",
+    "express": "^5.2.1",
+    "multer": "^2.1.1",
+    "sharp": "^0.35.1",
+    "socket.io": "^4.8.3"
+  }
+}

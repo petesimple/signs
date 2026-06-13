@@ -34,3 +34,24 @@ body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
 .muted { color:var(--muted); margin-top:8px; }
 .links a { display:inline-block; margin-right:10px; color:#cfd6ff; }
 pre { overflow:auto; max-height:280px; background:#0f0f1a; padding:12px; border-radius:12px; border:1px solid var(--border); }
+
+.youtubeSlide {
+  position: relative;
+  overflow: hidden;
+}
+
+#youtubePlayer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#youtubePlayer iframe {
+  width: 100%;
+  height: 100%;
+}
+
+.youtubeText {
+  pointer-events: none;
+}

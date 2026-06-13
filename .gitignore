@@ -1,0 +1,7 @@
+
+node_modules/
+server/signage.sqlite
+server/signage.sqlite-shm
+server/signage.sqlite-wal
+server/uploads/
+public/admin.js.bak-youtube
